@@ -1,0 +1,4 @@
+ip: 192.168.43.254
+dvd_dir: "/dvd"
+root_folder: "/var/www/anu"
+http_port: 8002

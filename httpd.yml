@@ -1,0 +1,71 @@
+- hosts: localhost 
+  vars_files:
+          httpd_var.yml
+
+  tasks:
+  - name: "Creating a directory to mount the dvd"
+    file:
+       state: directory
+       path: "{{ dvd_dir }}"
+
+  - name: "Mounting the dvd on the directory created"
+    mount:
+       src: "/dev/cdrom"
+       path: "{{ dvd_dir }}"
+       state: mounted
+       fstype: "iso9660"
+
+  - name: "Configuring yum repository to mount the dvd  (AppStream)"
+    yum_repository:
+       baseurl: "{{ dvd_dir }}/AppStream"
+       name: "AppStream"
+       description: "Packages for Appstream"
+       gpgcheck: no
+
+  - name: "Configuring yum repository to mount the dvd  (baseOS)"
+    yum_repository:
+       baseurl: "{{ dvd_dir }}/BaseOS"
+       name: "BaseOS"
+       description: "Packages for BaseOS"
+       gpgcheck: no
+
+  - name: "Installing the httpd software"
+    package:
+       name: httpd
+       state: present 
+
+  - name: "Creation of document root folder"
+    file:
+       state: directory
+       path: "{{ root_folder }}"
+    
+  - name: "Configuring the conf file for document root and port number"
+    template:
+       dest: "/etc/httpd/conf.d/httpd.conf"
+       src: "/root/httpd_ws/httpd.conf"
+    notify:
+     - restart_httpd
+
+  - name: "Copy the content"
+    copy:
+       dest: "{{ root_folder }}/index.html"
+       content: "Arth_task_11 completed successfully \n"
+
+  - name: "Allow the firewall rules for port number "
+    firewalld:
+       port: "{{ http_port }}/tcp"
+       state: enabled
+       permanent: yes
+       immediate: yes
+
+  - name: "Start the service"
+    service:
+       name: "httpd"
+       state: started
+
+  handlers:
+    - name: restart_httpd
+      service:
+        name: "httpd"
+        state: restarted
+
